@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.util.List;
-import com.fasterxml.jackson.annotation.JsonIgnore; // <-- AÑADE ESTA IMPORTACIÓN
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Data
 @NoArgsConstructor
@@ -25,7 +25,13 @@ public class Category {
     @Column
     private String description;
 
-    @JsonIgnore // <-- AÑADE ESTA ANOTACIÓN AQUÍ
+    @JsonIgnore
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Product> products;
+
+    // Constructor personalizado para id y name
+    public Category(Long id, String name) {
+        this.id = id;
+        this.name = name;
+    }
 }
