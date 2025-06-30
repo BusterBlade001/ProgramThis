@@ -18,6 +18,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -120,21 +121,23 @@ class ProductServiceTest {
     // Test para updateProduct
     @Test
     void updateProduct_WhenProductAndCategoryExist_ShouldUpdateAndReturnProduct() {
-        Product updatedDetails = new Product(null, "Updated Laptop", "Updated description", 1099.99, 20, null);
-        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
-        when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
-        when(productRepository.save(any(Product.class))).thenReturn(product);
+    // Crear una nueva categoría para el update
+    Category newCategory = new Category(2L, "New Category");
+    Product updatedDetails = new Product(null, "Updated Laptop", "Updated description", 1099.99, 20, null);
+    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+    when(categoryRepository.findById(2L)).thenReturn(Optional.of(newCategory)); // Nueva categoría
+    when(productRepository.save(any(Product.class))).thenReturn(product);
 
-        Optional<Product> result = productService.updateProduct(1L, updatedDetails, 1L);
+    Optional<Product> result = productService.updateProduct(1L, updatedDetails, 2L); // Usar 2L como nuevo categoryId
 
-        assertTrue(result.isPresent());
-        assertEquals("Updated Laptop", result.get().getName());
-        assertEquals(1099.99, result.get().getPrice());
-        assertEquals(category, result.get().getCategory());
-        verify(productRepository, times(1)).findById(1L);
-        verify(categoryRepository, times(1)).findById(1L);
-        verify(productRepository, times(1)).save(any(Product.class));
-    }
+    assertTrue(result.isPresent());
+    assertEquals("Updated Laptop", result.get().getName());
+    assertEquals(1099.99, result.get().getPrice());
+    assertEquals(newCategory, result.get().getCategory()); // Verificar que se actualizó la categoría
+    verify(productRepository, times(1)).findById(1L);
+    verify(categoryRepository, times(1)).findById(2L); // Verificar que se busca la nueva categoría
+    verify(productRepository, times(1)).save(any(Product.class));
+}
 
     @Test
     void updateProduct_WhenProductDoesNotExist_ShouldReturnEmpty() {
