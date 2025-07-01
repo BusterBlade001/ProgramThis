@@ -1,9 +1,8 @@
-package com.programthis.core.controller;
+package com.programthis.productcatalogservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.programthis.productcatalogservice.model.Category;
 import com.programthis.productcatalogservice.service.CategoryService;
-import com.programthis.productcatalogservice.controller.CategoryController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

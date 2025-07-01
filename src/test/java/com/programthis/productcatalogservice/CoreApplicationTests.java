@@ -1,4 +1,4 @@
-package com.programthis.core;
+package com.programthis.productcatalogservice;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

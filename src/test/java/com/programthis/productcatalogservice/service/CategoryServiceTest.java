@@ -1,6 +1,5 @@
-package com.programthis.core.service;
+package com.programthis.productcatalogservice.service;
 
-import com.programthis.productcatalogservice.service.CategoryService;
 import com.programthis.productcatalogservice.model.Category;
 import com.programthis.productcatalogservice.repository.CategoryRepository;
 import org.junit.jupiter.api.BeforeEach;
