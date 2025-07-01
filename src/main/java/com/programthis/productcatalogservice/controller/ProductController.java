@@ -2,84 +2,107 @@ package com.programthis.productcatalogservice.controller;
 
 import com.programthis.productcatalogservice.model.Product;
 import com.programthis.productcatalogservice.service.ProductService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
-// Importaciones de Lombok para las clases internas
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
 @RequestMapping("/api/products")
+@Tag(name = "Product Management", description = "Endpoints for managing products")
 public class ProductController {
 
     @Autowired
     private ProductService productService;
 
     @GetMapping
-    public List<Product> getAllProducts() {
-        return productService.getAllProducts();
+    @Operation(summary = "Get all products")
+    public CollectionModel<EntityModel<Product>> getAllProducts() {
+        List<EntityModel<Product>> products = productService.getAllProducts().stream()
+                .map(this::toEntityModel)
+                .collect(Collectors.toList());
+        return CollectionModel.of(products,
+                linkTo(methodOn(ProductController.class).getAllProducts()).withSelfRel());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Product> getProductById(@PathVariable Long id) {
-        Optional<Product> product = productService.getProductById(id);
-        return product.map(ResponseEntity::ok)
-                      .orElseGet(() -> ResponseEntity.notFound().build());
+    @Operation(summary = "Get a product by its ID")
+    public ResponseEntity<EntityModel<Product>> getProductById(@PathVariable Long id) {
+        return productService.getProductById(id)
+                .map(this::toEntityModel)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<Product> createProduct(@RequestBody ProductCreationRequest request) {
+    @Operation(summary = "Create a new product")
+    public ResponseEntity<EntityModel<Product>> createProduct(@RequestBody ProductCreationRequest request) {
         try {
             Product newProduct = productService.createProduct(
-                request.getName(),          // <-- Asegúrate de que esta línea exista y sea .getName()
-                request.getDescription(),   // <-- .getDescription()
-                request.getPrice(),         // <-- .getPrice()
-                request.getStock(),         // <-- .getStock()
-                request.getCategoryId()     // <-- .getCategoryId()
-            );
-            return ResponseEntity.status(HttpStatus.CREATED).body(newProduct);
+                    request.getName(),
+                    request.getDescription(),
+                    request.getPrice(),
+                    request.getStock(),
+                    request.getCategoryId());
+            return ResponseEntity.status(HttpStatus.CREATED).body(toEntityModel(newProduct));
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody ProductUpdateRequest request) {
+    @Operation(summary = "Update an existing product")
+    public ResponseEntity<EntityModel<Product>> updateProduct(@PathVariable Long id, @RequestBody ProductUpdateRequest request) {
         try {
-            Optional<Product> updatedProduct = productService.updateProduct(
-                id,
-                request.getProductDetails(), // <-- .getProductDetails()
-                request.getCategoryId()      // <-- .getCategoryId()
-            );
-            return updatedProduct.map(ResponseEntity::ok)
-                                 .orElseGet(() -> ResponseEntity.notFound().build());
+            return productService.updateProduct(id, request.getProductDetails(), request.getCategoryId())
+                    .map(this::toEntityModel)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteProduct(@PathVariable Long id) {
+    @Operation(summary = "Delete a product")
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/category/{categoryId}")
-    public List<Product> getProductsByCategoryId(@PathVariable Long categoryId) {
-        return productService.getProductsByCategoryId(categoryId);
+    @Operation(summary = "Get all products for a given category ID")
+    public CollectionModel<EntityModel<Product>> getProductsByCategoryId(@PathVariable Long categoryId) {
+        List<EntityModel<Product>> products = productService.getProductsByCategoryId(categoryId).stream()
+                .map(this::toEntityModel)
+                .collect(Collectors.toList());
+        return CollectionModel.of(products,
+                linkTo(methodOn(ProductController.class).getProductsByCategoryId(categoryId)).withSelfRel());
     }
 
-    // --- Clases DTO (Data Transfer Object) para Request Bodies ---
-    // ASEGÚRATE DE QUE ESTAS CLASES TENGAN LAS ANOTACIONES DE LOMBOK
+    // Helper para convertir Product a EntityModel
+    private EntityModel<Product> toEntityModel(Product product) {
+        return EntityModel.of(product,
+                linkTo(methodOn(ProductController.class).getProductById(product.getId())).withSelfRel(),
+                linkTo(methodOn(CategoryController.class).getCategoryById(product.getCategory().getId())).withRel("category"),
+                linkTo(methodOn(ProductController.class).getAllProducts()).withRel("all-products"));
+    }
+    
+    // --- DTOs ---
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
